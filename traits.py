@@ -11,7 +11,7 @@ from typing import (
     MutableMapping,
 )
 
-from .weakref_utilities import DefaultWeakKeyDictionary, OrderedWeakSet
+from .weakref_utilities import DefaultWeakKeyDictionary
 
 
 Owner = TypeVar('Owner')
@@ -109,7 +109,7 @@ class _BaseHasCallback(BaseTrait):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.callbacks = DefaultWeakKeyDictionary(OrderedWeakSet)
+        self.callbacks = DefaultWeakKeyDictionary(list)
 
 
 class HasCallback(_BaseHasCallback):
@@ -126,7 +126,7 @@ class HasCallback(_BaseHasCallback):
     def add_callback(self, obj: Owner, func: Callable[[Value], None]) -> None:
         if len(inspect.signature(func).parameters) != 1:
             raise Exception('The callback must only take a single argument.')
-        self.callbacks[obj].add(func)
+        self.callbacks[obj].append(func)
 
 
 class HasCallbackDelta(_BaseHasCallback):
@@ -149,7 +149,7 @@ class HasCallbackDelta(_BaseHasCallback):
     def add_callback(self, obj: Owner, func: Callable[[Value, Value], None]) -> None:
         if len(inspect.signature(func).parameters) != 2:
             raise Exception('The callback must take two arguments.')
-        self.callbacks[obj].add(func)
+        self.callbacks[obj].append(func)
 
 
 class _BaseHasValidator(BaseTrait):
@@ -162,7 +162,7 @@ class _BaseHasValidator(BaseTrait):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.validators = DefaultWeakKeyDictionary(OrderedWeakSet)
+        self.validators = DefaultWeakKeyDictionary(list)
 
     def __add__(self, other: BaseTrait) -> BaseTrait:
         """
@@ -189,7 +189,7 @@ class HasValidator(_BaseHasValidator):
     def add_validator(self, obj: Owner, func: Callable[[Value], Value]) -> None:
         if len(inspect.signature(func).parameters) != 1:
             raise Exception('The validator must take a single argument.')
-        self.validators[obj].add(func)
+        self.validators[obj].append(func)
 
 
 class HasValidatorDelta(_BaseHasValidator):
@@ -213,4 +213,4 @@ class HasValidatorDelta(_BaseHasValidator):
     def add_validator(self, obj: Owner, func: Callable[[Value, Value], Value]) -> None:
         if len(inspect.signature(func).parameters) != 2:
             raise Exception('The validator must take two arguments.')
-        self.validators[obj].add(func)
+        self.validators[obj].append(func)
