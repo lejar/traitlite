@@ -29,7 +29,7 @@ coverage report
 
 ## Documentation
 
-The docs can be found [here](). Alternatively, if you want to build them yourself simply run
+The docs can be found [here](https://traitlite.readthedocs.io/en/latest/). Alternatively, if you want to build them yourself simply run
 
 ```bash
 make <target>
