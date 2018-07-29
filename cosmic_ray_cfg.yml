@@ -1,0 +1,12 @@
+module: traitlite
+
+baseline: 10
+
+exclude-modules:
+
+test-runner:
+  name: unittest
+  args: tests
+
+execution-engine:
+  name: local
