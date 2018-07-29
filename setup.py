@@ -1,11 +1,14 @@
 from setuptools import setup, find_packages
 import distutils.cmd
+import os
+import shutil
 import subprocess
 
 
-class CosmicRay(distutils.cmd.Command):
-    description = 'Run cosmic-ray to find bad unit tests.'
+class RunCommands(distutils.cmd.Command):
+    description = ''
     user_options = []
+    commands = []
 
     def initialize_options(self):
         pass
@@ -15,22 +18,41 @@ class CosmicRay(distutils.cmd.Command):
 
     def run(self):
         print('Running cosmic-ray. This could take a while.')
-        commands = [
-            'cosmic-ray init cosmic_ray_cfg.yml session',
-            'cosmic-ray exec session',
-            'cosmic-ray dump session | cr-report',
-        ]
-        for command in commands:
+        for command in self.commands:
             print(command)
             try:
                 subprocess.check_call(command, shell=True)
             except subprocess.CalledProcessError:
-                print('Command failed. Aborting cosmic-ray.')
+                print('Command failed. Aborting.')
                 return
 
 
-class Coverage(distutils.cmd.Command):
+class CosmicRay(RunCommands):
+    description = 'Run cosmic-ray to find bad unit tests.'
+    commands = [
+        'cosmic-ray init cosmic_ray_cfg.yml session',
+        'cosmic-ray exec session',
+        'cosmic-ray dump session | cr-report',
+    ]
+
+
+class Coverage(RunCommands):
     description = 'Determine unittest coverage.'
+    commands = [
+        'coverage run --branch -m unittest discover',
+        'coverage report',
+    ]
+
+
+class MyPy(RunCommands):
+    description = 'Run mypy on the package.'
+    commands = [
+        'mypy traitlite/',
+    ]
+
+
+class Clean(distutils.cmd.Command):
+    description = 'Clean up the whole package.'
     user_options = []
 
     def initialize_options(self):
@@ -40,17 +62,32 @@ class Coverage(distutils.cmd.Command):
         pass
 
     def run(self):
-        commands = [
-            'coverage run -m unittest discover',
-            'coverage report',
+        to_remove = [
+            # Files.
+            'session.json',
+            '.coverage',
+            '.DS_Store',
+
+            # Directories.
+            '.hypothesis',
+            '.mypy_cache',
+            'build',
+            'dist',
+            'docs/_build',
+            'tests/__pycache__',
+            'traitlite/__pycache__',
+            'traitlite.egg-info',
         ]
-        for command in commands:
-            print(command)
-            try:
-                subprocess.check_call(command, shell=True)
-            except subprocess.CalledProcessError:
-                print('Command failed. Aborting.')
-                return
+        for remove in to_remove:
+            remove = os.path.join(*remove.split('/'))
+            if os.path.isdir(remove):
+                shutil.rmtree(remove, ignore_errors=True)
+            else:
+                try:
+                    os.remove(remove)
+                except OSError as error:
+                    if error.errno != 2:
+                        raise
 
 
 with open('README.md', 'r') as fh:
@@ -76,5 +113,7 @@ setup(
     cmdclass={
         'crtest': CosmicRay,
         'coverage': Coverage,
+        'mypy': MyPy,
+        'clean': Clean,
     },
 )
