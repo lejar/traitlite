@@ -31,17 +31,24 @@ class TestOrderedSet(unittest.TestCase):
         for item in list_:
             self.assertIn(item, oset)
 
-    @hypothesis.given(lists(integers(), unique=True))
+    @hypothesis.given(lists(integers(), unique=False))
     def test_add(self, list_):
         """Test adding an item to the set"""
         oset = weakref_utilities.OrderedSet()
         self.assertEqual(len(oset), 0)
 
         for item in list_:
-            oset.add(item)
-            self.assertIn(item, oset)
+            item_in = item in oset
+            count = len(oset)
 
-        self.assertEqual(len(oset), len(list_))
+            oset.add(item)
+
+            if item_in:
+                self.assertEqual(len(oset), count)
+            else:
+                self.assertEqual(len(oset), count + 1)
+
+        self.assertEqual(len(oset), len(set(list_)))
 
     @hypothesis.given(lists(integers(), unique=True))
     def test_remove(self, list_):
