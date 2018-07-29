@@ -9,13 +9,13 @@ from traitlite import traits
 
 def magic_mock_with_single_argument(*args, **kwargs):
     mock = MagicMock(*args, **kwargs)
-    mock.__signature__ = inspect.signature(lambda _: None)
+    mock.__signature__ = inspect.signature(lambda _: None) # pragma: no branch
     return mock
 
 
 def magic_mock_with_two_arguments(*args, **kwargs):
     mock = MagicMock(*args, **kwargs)
-    mock.__signature__ = inspect.signature(lambda _1, _2: None)
+    mock.__signature__ = inspect.signature(lambda _1, _2: None) # pragma: no branch
     return mock
 
 
