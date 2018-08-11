@@ -3,6 +3,7 @@ import distutils.cmd
 import os
 import shutil
 import subprocess
+import sys
 
 
 class RunCommands(distutils.cmd.Command):
@@ -22,8 +23,10 @@ class RunCommands(distutils.cmd.Command):
             print(command)
             try:
                 subprocess.check_call(command, shell=True)
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as error:
                 print('Command failed. Aborting.')
+                print(error.output)
+                sys.exit(error.returncode)
                 return
 
 
