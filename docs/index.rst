@@ -55,13 +55,5 @@ To use different properties at the same time, simply add the traits to your vari
     foo.b = 2 # Raises exception because of read-only
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
 .. automodule:: traitlite
     :members:
