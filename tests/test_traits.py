@@ -7,6 +7,12 @@ import hypothesis
 from traitlite import traits
 
 
+def magic_mock_with_no_arguments(*args, **kwargs):
+    mock = MagicMock(*args, **kwargs)
+    mock.__signature__ = inspect.signature(lambda: None) # pragma: no branch
+    return mock
+
+
 def magic_mock_with_single_argument(*args, **kwargs):
     mock = MagicMock(*args, **kwargs)
     mock.__signature__ = inspect.signature(lambda _: None) # pragma: no branch
@@ -16,6 +22,12 @@ def magic_mock_with_single_argument(*args, **kwargs):
 def magic_mock_with_two_arguments(*args, **kwargs):
     mock = MagicMock(*args, **kwargs)
     mock.__signature__ = inspect.signature(lambda _1, _2: None) # pragma: no branch
+    return mock
+
+
+def magic_mock_with_three_arguments(*args, **kwargs):
+    mock = MagicMock(*args, **kwargs)
+    mock.__signature__ = inspect.signature(lambda _1, _2, _3: None) # pragma: no branch
     return mock
 
 
@@ -233,6 +245,16 @@ class TestHasCallback(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'a single'):
             Foo.a.add_callback(foo, callback)
 
+        # Try with even more arguments.
+        callback = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            Foo.a.add_callback(foo, callback)
+
+        # No arguments should also fail.
+        callback = magic_mock_with_no_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            Foo.a.add_callback(foo, callback)
+
 
 class TestHasCallbackDelta(unittest.TestCase):
     def test_add_callback(self):
@@ -262,6 +284,16 @@ class TestHasCallbackDelta(unittest.TestCase):
 
         # Create a callback function - here a mock - and add it.
         callback = magic_mock_with_single_argument()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            Foo.a.add_callback(foo, callback)
+
+        # Too many arguments should also fail.
+        callback = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            Foo.a.add_callback(foo, callback)
+
+        # No arguments should also fail.
+        callback = magic_mock_with_no_arguments()
         with self.assertRaisesRegex(Exception, 'take two'):
             Foo.a.add_callback(foo, callback)
 
@@ -335,8 +367,18 @@ class TestHasValidator(unittest.TestCase):
             a = traits.HasValidator()
         foo = Foo()
 
-        # Create a callback function - here a mock - and add it.
+        # Create a validator function - here a mock - and add it.
         validator = magic_mock_with_two_arguments(return_value=3)
+        with self.assertRaisesRegex(Exception, 'a single'):
+            Foo.a.add_validator(foo, validator)
+
+        # Try with even more arguments.
+        validator = magic_mock_with_three_arguments(return_value=4)
+        with self.assertRaisesRegex(Exception, 'a single'):
+            Foo.a.add_validator(foo, validator)
+
+        # No arguments should also fail.
+        validator = magic_mock_with_no_arguments(return_value=5)
         with self.assertRaisesRegex(Exception, 'a single'):
             Foo.a.add_validator(foo, validator)
 
@@ -348,7 +390,7 @@ class TestHasValidatorDelta(unittest.TestCase):
             a = traits.HasValidatorDelta()
         foo = Foo()
 
-        # Create a callback function - here a mock - and add it.
+        # Create a validator function - here a mock - and add it.
         validator_1 = magic_mock_with_two_arguments(return_value=3)
         validator_2 = magic_mock_with_two_arguments(return_value=4)
         Foo.a.add_validator(foo, validator_1)
@@ -376,8 +418,18 @@ class TestHasValidatorDelta(unittest.TestCase):
             a = traits.HasValidatorDelta()
         foo = Foo()
 
-        # Create a callback function - here a mock - and add it.
+        # Create a validator function - here a mock - and add it.
         validator = magic_mock_with_single_argument(return_value=3)
+        with self.assertRaisesRegex(Exception, 'take two'):
+            Foo.a.add_validator(foo, validator)
+
+        # Too many arguments should also fail.
+        validator = magic_mock_with_three_arguments(return_value=3)
+        with self.assertRaisesRegex(Exception, 'take two'):
+            Foo.a.add_validator(foo, validator)
+
+        # No arguments should also fail.
+        validator = magic_mock_with_no_arguments(return_value=3)
         with self.assertRaisesRegex(Exception, 'take two'):
             Foo.a.add_validator(foo, validator)
 
