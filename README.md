@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/lejar/traitlite.svg?branch=master)](https://travis-ci.org/lejar/traitlite)
+
 # traitlite
 
 Traitlite is a light-weight (MIT-licensed) package which provides certain [descriptors](https://docs.python.org/3/howto/descriptor.html) to help control the attributes in a class, such as making them read-only<sup>\*</sup> or providing type-checking whenever the value is set. The documentation has examples for every trait, so check it out!
