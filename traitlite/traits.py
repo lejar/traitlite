@@ -29,11 +29,15 @@ def resolve_mro(obj1: 'BaseTrait', obj2: 'BaseTrait') -> Tuple[Type, ...]:
 
     # Get the reverse order of the mro so we start at object and add only new
     # classes.
-    mro = tuple([i for i in obj1_mro[::-1]] +
-                [i for i in obj2_mro[::-1] if i not in obj1_mro])
+    mro = ([i for i in obj1_mro[::-1]] +
+           [i for i in obj2_mro[::-1] if i not in obj1_mro])
+
+    # Having generic in here causes problems at runtime.
+    if Generic in mro:
+        mro.remove(Generic) # type: ignore
 
     # Reverse again to get the correct ordering.
-    return mro[::-1]
+    return tuple(mro[::-1])
 
 
 class BaseTrait(Generic[Owner, Value]):
