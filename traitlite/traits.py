@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import inspect
 import weakref
 from typing import (
@@ -18,7 +16,7 @@ Owner = TypeVar('Owner')
 Value = TypeVar('Value')
 
 
-def resolve_mro(obj1: BaseTrait, obj2: BaseTrait) -> Tuple[Type, ...]:
+def resolve_mro(obj1: 'BaseTrait', obj2: 'BaseTrait') -> Tuple[Type, ...]:
     """
     Create a type tuple which contains no duplicates and is in an order
     which can be used to instantiate a subclass.
@@ -59,7 +57,7 @@ class BaseTrait:
     def __set__(self, obj: Owner, value: Value) -> None:
         self.value[obj] = value
 
-    def __add__(self, other: BaseTrait) -> BaseTrait:
+    def __add__(self, other: 'BaseTrait') -> 'BaseTrait':
         if not isinstance(other, BaseTrait):
             raise Exception('Traits can only be added with other traits')
 
