@@ -5,16 +5,23 @@ from typing import (
     Any,
     Callable,
     Iterable,
+    Iterator,
     List,
+    Mapping,
+    TypeVar,
 )
 
 
-class DefaultWeakKeyDictionary(weakref.WeakKeyDictionary):
-    def __init__(self, factory: Callable[[], Any]) -> None:
+KT = TypeVar('KT')
+VT = TypeVar('VT')
+
+
+class DefaultWeakKeyDictionary(weakref.WeakKeyDictionary, Mapping[KT, VT]):
+    def __init__(self, factory: Callable[[], VT]) -> None:
         super().__init__()
         self.factory = factory
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: KT) -> VT:
         if key not in self:
             self[key] = self.factory()
         return super().__getitem__(key)
@@ -32,7 +39,7 @@ class OrderedSet(collections.abc.Set):
     def __contains__(self, item: Any) -> bool:
         return item in self.data
 
-    def __iter__(self) -> Iterable[Any]:
+    def __iter__(self) -> Iterator[Any]:
         return iter(self.data)
 
     def __len__(self) -> int:
