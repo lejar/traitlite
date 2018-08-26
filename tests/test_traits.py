@@ -234,26 +234,63 @@ class TestHasCallback(unittest.TestCase):
         foo.a = 5
         callback.assert_called_with(5)
 
-    def test_add_bad_callback(self):
+    def test_check_callback(self):
         """Test adding a callback which takes a wrong number of arguments."""
-        class Foo:
-            a = traits.HasCallback()
-        foo = Foo()
+        # A callback with a single argument should not cause an error.
+        callback = magic_mock_with_single_argument()
+        traits.HasCallback.check_callback(callback)
 
         # Create a callback function - here a mock - and add it.
         callback = magic_mock_with_two_arguments()
         with self.assertRaisesRegex(Exception, 'a single'):
-            Foo.a.add_callback(foo, callback)
+            traits.HasCallback.check_callback(callback)
 
         # Try with even more arguments.
         callback = magic_mock_with_three_arguments()
         with self.assertRaisesRegex(Exception, 'a single'):
-            Foo.a.add_callback(foo, callback)
+            traits.HasCallback.check_callback(callback)
 
         # No arguments should also fail.
         callback = magic_mock_with_no_arguments()
         with self.assertRaisesRegex(Exception, 'a single'):
-            Foo.a.add_callback(foo, callback)
+            traits.HasCallback.check_callback(callback)
+
+    def test_passing_callbacks_on_construction(self):
+        """Test passing callback functions to the constructor."""
+        callback_1 = magic_mock_with_single_argument()
+        callback_2 = magic_mock_with_single_argument()
+
+        class Foo:
+            a = traits.HasCallback([callback_1, callback_2])
+        foo = Foo()
+
+        self.assertIn(callback_1, Foo.a.callbacks[foo])
+        self.assertIn(callback_2, Foo.a.callbacks[foo])
+
+        value = 5
+        foo.a = value
+        callback_1.assert_called_with(value)
+        callback_2.assert_called_with(value)
+
+    def test_passing_bad_callbacks_on_construction(self):
+        """Test adding a callback in the constructor which takes a wrong number of arguments."""
+        # Create a callback function - here a mock - and add it.
+        callback = magic_mock_with_two_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            class Foo:
+                a = traits.HasCallback([callback])
+
+        # Try with even more arguments.
+        callback = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            class Foo:
+                a = traits.HasCallback([callback])
+
+        # No arguments should also fail.
+        callback = magic_mock_with_no_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            class Foo:
+                a = traits.HasCallback([callback])
 
 
 class TestHasCallbackDelta(unittest.TestCase):
@@ -271,31 +308,64 @@ class TestHasCallbackDelta(unittest.TestCase):
         self.assertIn(foo, Foo.a.callbacks)
         self.assertIn(callback, Foo.a.callbacks[foo])
 
-        # Changing the value should call the callback.
-        callback.assert_not_called()
-        foo.a = 5
-        callback.assert_called_with(None, 5)
-
-    def test_add_bad_callback(self):
-        """Test adding a callback which takes a wrong number of arguments."""
-        class Foo:
-            a = traits.HasCallbackDelta()
-        foo = Foo()
+    def test_check_callback(self):
+        """Test checking callback functions."""
+        # A callback with two arguments should not raise any errors.
+        callback = magic_mock_with_two_arguments()
+        traits.HasCallbackDelta.check_callback(callback)
 
         # Create a callback function - here a mock - and add it.
         callback = magic_mock_with_single_argument()
         with self.assertRaisesRegex(Exception, 'take two'):
-            Foo.a.add_callback(foo, callback)
+            traits.HasCallbackDelta.check_callback(callback)
 
         # Too many arguments should also fail.
         callback = magic_mock_with_three_arguments()
         with self.assertRaisesRegex(Exception, 'take two'):
-            Foo.a.add_callback(foo, callback)
+            traits.HasCallbackDelta.check_callback(callback)
 
         # No arguments should also fail.
         callback = magic_mock_with_no_arguments()
         with self.assertRaisesRegex(Exception, 'take two'):
-            Foo.a.add_callback(foo, callback)
+            traits.HasCallbackDelta.check_callback(callback)
+
+    def test_passing_callbacks_on_construction(self):
+        """Test passing callback functions to the constructor."""
+        callback_1 = magic_mock_with_two_arguments()
+        callback_2 = magic_mock_with_two_arguments()
+
+        class Foo:
+            a = traits.HasCallbackDelta([callback_1, callback_2])
+        foo = Foo()
+
+        self.assertIn(callback_1, Foo.a.callbacks[foo])
+        self.assertIn(callback_2, Foo.a.callbacks[foo])
+
+        value = 5
+        foo.a = value
+        callback_1.assert_called_with(None, value)
+        callback_2.assert_called_with(None, value)
+
+    def test_passing_bad_callbacks_on_construction(self):
+        """Test adding a callback in the constructor which takes a wrong number of arguments."""
+
+        # Create a callback function - here a mock - and add it.
+        callback = magic_mock_with_single_argument()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            class Foo:
+                a = traits.HasCallbackDelta([callback])
+
+        # Too many arguments should also fail.
+        callback = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            class Foo:
+                a = traits.HasCallbackDelta([callback])
+
+        # No arguments should also fail.
+        callback = magic_mock_with_no_arguments()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            class Foo:
+                a = traits.HasCallbackDelta([callback])
 
 
 class TestHasValidator(unittest.TestCase):

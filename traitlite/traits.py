@@ -1,12 +1,15 @@
+import copy
 import inspect
-import weakref
+from weakref import WeakKeyDictionary
 from typing import (
+    Any,
     Callable,
+    List,
+    Generic,
     Optional,
     Tuple,
     Type,
     TypeVar,
-    MutableMapping,
 )
 
 from .weakref_utilities import DefaultWeakKeyDictionary
@@ -33,14 +36,14 @@ def resolve_mro(obj1: 'BaseTrait', obj2: 'BaseTrait') -> Tuple[Type, ...]:
     return mro[::-1]
 
 
-class BaseTrait:
+class BaseTrait(Generic[Owner, Value]):
     """
     The base class of all traits. While this can be instantiated, it does
     not provide any functionality by itself.
     """
     def __init__(self) -> None:
         self.name: Optional[str] = None
-        self.value: MutableMapping[Owner, Value] = weakref.WeakKeyDictionary()
+        self.value: WeakKeyDictionary[Owner, Value] = WeakKeyDictionary()
 
     def __set_name__(self, owner: Type[Owner], name: str) -> None:
         self.name = name
@@ -64,8 +67,8 @@ class BaseTrait:
         name = self.__class__.__name__ + '_' + other.__class__.__name__
         bases = resolve_mro(self, other)
 
-        new_obj_type = type(name, bases, {})
-        new_obj = new_obj_type.__new__(new_obj_type)
+        new_obj_type: Type[object] = type(name, bases, {})
+        new_obj = object.__new__(new_obj_type)
         new_obj.__dict__.update(other.__dict__)
         new_obj.__dict__.update(self.__dict__)
         return new_obj
@@ -88,7 +91,7 @@ class ReadOnly(BaseTrait):
         foo = Foo(3)
         foo.bar = 4 # This raises an exception
     """
-    def __set__(self, obj, value) -> None:
+    def __set__(self, obj: Owner, value: Value) -> None:
         if obj in self.value:
             raise Exception(
                 f"The attribute '{obj.__class__.__name__}.{self.name}' is read-only")
@@ -112,16 +115,17 @@ class TypeChecked(BaseTrait):
         foo = Foo(3) # This is okay
         foo = Foo(3.0) # This raises an exception
     """
-    def __init__(self, type_) -> None:
+    def __init__(self, type_: Type[object]) -> None:
         """
         :param type_: The type to check against:
         :type type_:  type
         """
         super().__init__()
-        self.type = type_
+        self.type: Type[object] = type_
 
-    def __set__(self, obj, value) -> None:
-        if (isinstance(value, bool) and self.type is not bool) or not isinstance(value, self.type):
+    def __set__(self, obj: Owner, value: Value) -> None:
+        if (isinstance(value, bool) and not issubclass(self.type, bool)) \
+                or not isinstance(value, self.type):
             raise Exception(
                 f"The attribute '{obj.__class__.__name__}.{self.name}' "
                 f"is of type '{self.type.__name__}', not '{type(value).__name__}'")
@@ -133,12 +137,10 @@ class _BaseHasCallback(BaseTrait):
     A base trait for traits implementing callbacks on value change.
     This class should not be instantiated.
     """
-    def __init__(self) -> None:
-        super().__init__()
-        self.callbacks = DefaultWeakKeyDictionary(list)
+    pass
 
 
-class HasCallback(_BaseHasCallback):
+class HasCallback(_BaseHasCallback, Generic[Owner, Value]):
     """
     A trait which introduces callbacks which are called after the given
     attribute has been given a new value. The callbacks are callable
@@ -161,8 +163,18 @@ class HasCallback(_BaseHasCallback):
 
         foo.bar = 3 # New value is: 3
     """
+    def __init__(self, callbacks: Optional[List[Callable[[Value], None]]] = None) -> None:
+        """
+        :param callbacks: A list of callbacks to use for every instance of this trait.
+        :type callbacks:  list
+        """
+        super().__init__()
+        self.callbacks: DefaultWeakKeyDictionary[Any, List[Callable[[Value], None]]] = \
+            DefaultWeakKeyDictionary(lambda: copy.copy(callbacks or []))
+
     def __set__(self, obj: Owner, value: Value) -> None:
         super().__set__(obj, value)
+
         for callback in self.callbacks[obj]:
             callback(value)
 
@@ -183,12 +195,23 @@ class HasCallback(_BaseHasCallback):
         i.e. builtin functions like ``max`` cannot be used directly, but must be
         wrapped in a lambda.
         """
-        if len(inspect.signature(func).parameters) != 1:
-            raise Exception('The callback must only take a single argument.')
+        self.check_callback(func)
         self.callbacks[obj].append(func)
 
+    @staticmethod
+    def check_callback(func: Callable[[Value], None]) -> None:
+        """
+        Raises an exception if the given callback function is not compatible with
+        this trait.
 
-class HasCallbackDelta(_BaseHasCallback):
+        :param func: A compatible callback function.
+        :type func:  Callable[[Value], None]
+        """
+        if len(inspect.signature(func).parameters) != 1:
+            raise Exception('The callback must only take a single argument.')
+
+
+class HasCallbackDelta(_BaseHasCallback, Generic[Owner, Value]):
     """
     A trait which introduces callbacks which are called after the given
     attribute has been given a new value. The callbacks are callable
@@ -213,9 +236,20 @@ class HasCallbackDelta(_BaseHasCallback):
         foo.bar = 3 # Old value: None, New value: 3
         foo.bar = 4 # Old value: 3, New value: 4
     """
+    def __init__(self, callbacks: Optional[List[Callable[[Value, Value], None]]] = None) -> None:
+        """
+        :param callbacks: A list of callbacks to use for every instance of this trait.
+        :type callbacks:  list
+        """
+        super().__init__()
+        for callback in callbacks or []:
+            self.check_callback(callback)
+        self.callbacks: DefaultWeakKeyDictionary[Any, List[Callable[[Value, Value], None]]] = \
+            DefaultWeakKeyDictionary(lambda: copy.copy(callbacks or []))
+
     def __set__(self, obj: Owner, value: Value) -> None:
         # Save a reference to the old value for the callback.
-        old_value: Value = self.value.get(obj, None)
+        old_value = self.value.get(obj, None)
 
         super().__set__(obj, value)
 
@@ -243,9 +277,20 @@ class HasCallbackDelta(_BaseHasCallback):
         i.e. builtin functions like ``max`` cannot be used directly, but must be
         wrapped in a lambda.
         """
+        self.check_callback(func)
+        self.callbacks[obj].append(func)
+
+    @staticmethod
+    def check_callback(func: Callable[[Value, Value], None]) -> None:
+        """
+        Raises an exception if the given callback function is not compatible with
+        this trait.
+
+        :param func: A compatible callback function.
+        :type func:  Callable[[Value, Value], None]
+        """
         if len(inspect.signature(func).parameters) != 2:
             raise Exception('The callback must take two arguments.')
-        self.callbacks[obj].append(func)
 
 
 class _BaseHasValidator(BaseTrait):
@@ -258,7 +303,8 @@ class _BaseHasValidator(BaseTrait):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.validators = DefaultWeakKeyDictionary(list)
+        self.validators: DefaultWeakKeyDictionary[Any, List[Callable]] = \
+            DefaultWeakKeyDictionary(list)
 
     def __add__(self, other: BaseTrait) -> BaseTrait:
         """
@@ -352,7 +398,7 @@ class HasValidatorDelta(_BaseHasValidator):
         print(foo.bar) # 4
     """
     def __set__(self, obj: Owner, value: Value) -> None:
-        old_value: Value = self.value.get(obj, None)
+        old_value: Optional[Value] = self.value.get(obj, None)
 
         # Each validator gets the output from the previous one as the
         # old value.
