@@ -248,6 +248,7 @@ class HasCallbackDelta(_BaseHasCallback, Generic[Owner, Value]):
         super().__init__()
         for callback in callbacks or []:
             self.check_callback(callback)
+
         self.callbacks: DefaultWeakKeyDictionary[Any, List[Callable[[Value, Value], None]]] = \
             DefaultWeakKeyDictionary(lambda: copy.copy(callbacks or []))
 
