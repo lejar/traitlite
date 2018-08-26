@@ -1,2 +1,2 @@
 hypothesis
-cosmicray
+cosmic_ray
