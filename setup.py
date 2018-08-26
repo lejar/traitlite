@@ -18,7 +18,7 @@ class RunCommands(distutils.cmd.Command):
         pass
 
     def run(self):
-        print('Running cosmic-ray. This could take a while.')
+        print('Running commands. This could take a while.')
         for command in self.commands:
             print(command)
             try:
@@ -33,6 +33,7 @@ class RunCommands(distutils.cmd.Command):
 class CosmicRay(RunCommands):
     description = 'Run cosmic-ray to find bad unit tests.'
     commands = [
+        r'''python -c "exec('try:\n    import typed_ast\n    x=1\nexcept:\n    x=0'); import sys; sys.stderr.write('typed_ast cannot be installed with cosmic_ray\n' if x == 1 else ''); sys.exit(x)"''',
         'cosmic-ray init cosmic_ray_cfg.yml session',
         'cosmic-ray exec session',
         'cosmic-ray dump session | cr-report',
@@ -42,7 +43,7 @@ class CosmicRay(RunCommands):
 class Coverage(RunCommands):
     description = 'Determine unittest coverage.'
     commands = [
-        'coverage run --branch -m unittest discover',
+        'coverage run --branch --source=traitlite -m unittest discover',
         'coverage report',
     ]
 
