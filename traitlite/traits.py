@@ -173,6 +173,10 @@ class HasCallback(_BaseHasCallback, Generic[Owner, Value]):
         :type callbacks:  list
         """
         super().__init__()
+
+        for callback in callbacks or []:
+            self.check_callback(callback)
+
         self.callbacks: DefaultWeakKeyDictionary[Any, List[Callable[[Value], None]]] = \
             DefaultWeakKeyDictionary(lambda: copy.copy(callbacks or []))
 
@@ -180,6 +184,7 @@ class HasCallback(_BaseHasCallback, Generic[Owner, Value]):
         super().__set__(obj, value)
 
         for callback in self.callbacks[obj]:
+            self.check_callback(callback)
             callback(value)
 
     def add_callback(self, obj: Owner, func: Callable[[Value], None]) -> None:
