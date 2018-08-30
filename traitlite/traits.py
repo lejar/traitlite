@@ -166,6 +166,21 @@ class HasCallback(_BaseHasCallback, Generic[Owner, Value]):
         Foo.bar.add_callback(foo, print_value)
 
         foo.bar = 3 # New value is: 3
+
+    Additionally, a list of default callbacks can be passed to the constructor:
+    ::
+
+        from traitlite import HasCallback
+
+        def print_value(value):
+            print('New value is:', value)
+
+        class Foo:
+            bar = HasCallback([print_value])
+
+        foo = Foo()
+
+        foo.bar = 3 # New value is: 3
     """
     def __init__(self, callbacks: Optional[List[Callable[[Value], None]]] = None) -> None:
         """
@@ -241,6 +256,23 @@ class HasCallbackDelta(_BaseHasCallback, Generic[Owner, Value]):
         # We have to use the class here instead of the instance, and the
         # instance is passed as the first argument.
         Foo.bar.add_callback(foo, print_value)
+
+        foo.bar = 3 # Old value: None, New value: 3
+        foo.bar = 4 # Old value: 3, New value: 4
+
+    Additionally, a list of default callbacks can be passed to the constructor:
+    ::
+
+        from traitlite import HasCallbackDelta
+
+        def print_value(old_value, new_value):
+            print('Old value: {}, New value: {}'.format(
+                old_value, new_value))
+
+        class Foo:
+            bar = HasCallbackDelta([print_value])
+
+        foo = Foo()
 
         foo.bar = 3 # Old value: None, New value: 3
         foo.bar = 4 # Old value: 3, New value: 4
