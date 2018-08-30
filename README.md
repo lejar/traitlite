@@ -16,10 +16,23 @@ pip install traitlite
 
 ## Running the tests
 
-Traitlite uses the builtin python unit testing framework. To run the tests, simply execute the following from the package directory:
+Traitlite uses the builtin python unit testing framework, along with [hypothesis](https://hypothesis.works/). Additionally, [cosmic-ray](https://github.com/sixty-north/cosmic-ray) is used for mutation testing.
+
+To install the dependencies required to run the tests, run
+```bash
+pip install -r unittest_requirements.txt
+```
+This will install both hypothesis and cosmic-ray.
+
+To run the tests, simply execute the following from the package directory:
 
 ```bash
-python -munittest discover
+python setup.py test
+```
+
+To run mutation testing, execute:
+```bash
+python setup.py crtest
 ```
 
 If you want to get the [coverage](https://github.com/nedbat/coveragepy) of the tests, execute:
