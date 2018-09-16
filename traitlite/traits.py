@@ -34,7 +34,7 @@ def resolve_mro(obj1: 'BaseTrait', obj2: 'BaseTrait') -> Tuple[Type, ...]:
 
     # Having generic in here causes problems at runtime.
     if Generic in mro:
-        mro.remove(Generic) # type: ignore
+        mro.remove(Generic)  # type: ignore
 
     # Reverse again to get the correct ordering.
     return tuple(mro[::-1])
@@ -343,11 +343,6 @@ class _BaseHasValidator(BaseTrait):
     The add method is overridden in order to make sure that any traits
     with callbacks are called after the validators have run.
     """
-    def __init__(self) -> None:
-        super().__init__()
-        self.validators: DefaultWeakKeyDictionary[Any, List[Callable]] = \
-            DefaultWeakKeyDictionary(list)
-
     def __add__(self, other: BaseTrait) -> BaseTrait:
         """
         Make sure that validator always comes before callback when compounding
@@ -359,7 +354,7 @@ class _BaseHasValidator(BaseTrait):
         return super().__add__(other)
 
 
-class HasValidator(_BaseHasValidator):
+class HasValidator(_BaseHasValidator, Generic[Owner, Value]):
     """
     A trait which introduces validators which are called before the given
     attribute is given a new value. The validators take the new value as
@@ -384,7 +379,34 @@ class HasValidator(_BaseHasValidator):
         print(foo.bar) # 0
         foo.bar = 11
         print(foo.bar) # 10
+
+    Additionally, a list of default validators can be passed to the constructor:
+    ::
+
+        from traitlite import HasValidator
+
+        class Foo:
+            bar = HasValidator([lambda x: max(0, x)])
+
+        foo = Foo()
+
+        foo.bar = 3
+        print(foo.bar) # 3
+        foo.bar = -1
+        print(foo.bar) # 0
     """
+    def __init__(self, validators: Optional[List[Callable[[Value], Value]]] = None) -> None:
+        """
+        :param validators: A list of validators to use for every instance of this trait.
+        :type validators:  list
+        """
+        super().__init__()
+        for validator in validators or []:
+            self.check_validator(validator)
+
+        self.validators: DefaultWeakKeyDictionary[Any, List[Callable[[Value], Value]]] = \
+            DefaultWeakKeyDictionary(lambda: copy.copy(validators or []))
+
     def __set__(self, obj: Owner, value: Value) -> None:
         for validator in self.validators[obj]:
             value = validator(value)
@@ -406,12 +428,23 @@ class HasValidator(_BaseHasValidator):
         i.e. builtin functions like ``max`` cannot be used directly, but must be wrapped
         in a lambda.
         """
-        if len(inspect.signature(func).parameters) != 1:
-            raise Exception('The validator must take a single argument.')
+        self.check_validator(func)
         self.validators[obj].append(func)
 
+    @staticmethod
+    def check_validator(func: Callable[[Value], Value]):
+        """
+        Raises an exception if the given validator function is not compatible with
+        this trait.
 
-class HasValidatorDelta(_BaseHasValidator):
+        :param func: A compatible validator function.
+        :type func:  Callable[[Value], Value]
+        """
+        if len(inspect.signature(func).parameters) != 1:
+            raise Exception('The validator must take a single argument.')
+
+
+class HasValidatorDelta(_BaseHasValidator, Generic[Owner, Value]):
     """
     A trait which introduces validators which are called before the given
     attribute is given a new value. The validators take the new value as
@@ -438,9 +471,36 @@ class HasValidatorDelta(_BaseHasValidator):
         print(foo.bar) # 3
         foo.bar = 4
         print(foo.bar) # 4
+
+    Additionally, a list of default validators can be passed to the constructor:
+    ::
+
+        from traitlite import HasValidatorDelta
+
+        class Foo:
+            bar = HasValidatorDelta([lambda old, new: max(old or 0, new)])
+
+        foo = Foo()
+
+        foo.bar = 3
+        print(foo.bar) # 3
+        foo.bar = -1
+        print(foo.bar) # 3
     """
+    def __init__(self, validators: Optional[List[Callable[[Value, Value], Value]]] = None) -> None:
+        """
+        :param validators: A list of validators to use for every instance of this trait.
+        :type validators:  list
+        """
+        super().__init__()
+        for validator in validators or []:
+            self.check_validator(validator)
+
+        self.validators: DefaultWeakKeyDictionary[Any, List[Callable[[Value, Value], Value]]] = \
+            DefaultWeakKeyDictionary(lambda: copy.copy(validators or []))
+
     def __set__(self, obj: Owner, value: Value) -> None:
-        old_value: Optional[Value] = self.value.get(obj, None)
+        old_value = self.value.get(obj, None)
 
         # Each validator gets the output from the previous one as the
         # old value.
@@ -466,6 +526,17 @@ class HasValidatorDelta(_BaseHasValidator):
         i.e. builtin functions like ``max`` cannot be used directly, but must be wrapped
         in a lambda.
         """
+        self.check_validator(func)
+        self.validators[obj].append(func)
+
+    @staticmethod
+    def check_validator(func: Callable[[Value, Value], Value]):
+        """
+        Raises an exception if the given validator function is not compatible with
+        this trait.
+
+        :param func: A compatible validator function.
+        :type func:  Callable[[Value], Value]
+        """
         if len(inspect.signature(func).parameters) != 2:
             raise Exception('The validator must take two arguments.')
-        self.validators[obj].append(func)

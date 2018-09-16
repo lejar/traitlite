@@ -452,6 +452,64 @@ class TestHasValidator(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'a single'):
             Foo.a.add_validator(foo, validator)
 
+    def test_check_validator(self):
+        """Test adding a validator which takes a wrong number of arguments."""
+        # A validator with a single argument should not cause an error.
+        validator = magic_mock_with_single_argument()
+        traits.HasValidator.check_validator(validator)
+
+        # Create a validator function - here a mock - and add it.
+        validator = magic_mock_with_two_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            traits.HasValidator.check_validator(validator)
+
+        # Try with even more arguments.
+        validator = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            traits.HasValidator.check_validator(validator)
+
+        # No arguments should also fail.
+        validator = magic_mock_with_no_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            traits.HasValidator.check_validator(validator)
+
+    def test_passing_validators_on_construction(self):
+        """Test passing validator functions to the constructor."""
+        validator_1 = magic_mock_with_single_argument(return_value=3)
+        validator_2 = magic_mock_with_single_argument(return_value=4)
+
+        class Foo:
+            a = traits.HasValidator([validator_1, validator_2])
+        foo = Foo()
+
+        self.assertIn(validator_1, Foo.a.validators[foo])
+        self.assertIn(validator_2, Foo.a.validators[foo])
+
+        foo.a = 5
+        validator_1.assert_called_with(5)
+        validator_2.assert_called_with(3)
+        self.assertEqual(foo.a, 4)
+
+    def test_passing_bad_validators_on_construction(self):
+        """Test adding a validator in the constructor which takes a wrong number of arguments."""
+        # Create a validator function - here a mock - and add it.
+        validator = magic_mock_with_two_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            class Foo:
+                a = traits.HasValidator([validator])
+
+        # Try with even more arguments.
+        validator = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            class Foo:
+                a = traits.HasValidator([validator])
+
+        # No arguments should also fail.
+        validator = magic_mock_with_no_arguments()
+        with self.assertRaisesRegex(Exception, 'a single'):
+            class Foo:
+                a = traits.HasValidator([validator])
+
 
 class TestHasValidatorDelta(unittest.TestCase):
     def test_add_validator(self):
@@ -502,6 +560,65 @@ class TestHasValidatorDelta(unittest.TestCase):
         validator = magic_mock_with_no_arguments(return_value=3)
         with self.assertRaisesRegex(Exception, 'take two'):
             Foo.a.add_validator(foo, validator)
+
+    def test_check_validator(self):
+        """Test checking validator functions."""
+        # A validator with two arguments should not raise any errors.
+        validator = magic_mock_with_two_arguments()
+        traits.HasValidatorDelta.check_validator(validator)
+
+        # Create a validator function - here a mock - and add it.
+        validator = magic_mock_with_single_argument()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            traits.HasValidatorDelta.check_validator(validator)
+
+        # Too many arguments should also fail.
+        validator = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            traits.HasValidatorDelta.check_validator(validator)
+
+        # No arguments should also fail.
+        validator = magic_mock_with_no_arguments()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            traits.HasValidatorDelta.check_validator(validator)
+
+    def test_passing_validators_on_construction(self):
+        """Test passing validator functions to the constructor."""
+        validator_1 = magic_mock_with_two_arguments(return_value=3)
+        validator_2 = magic_mock_with_two_arguments(return_value=4)
+
+        class Foo:
+            a = traits.HasValidatorDelta([validator_1, validator_2])
+        foo = Foo()
+
+        self.assertIn(validator_1, Foo.a.validators[foo])
+        self.assertIn(validator_2, Foo.a.validators[foo])
+
+        foo.a = 5
+        validator_1.assert_called_with(None, 5)
+        validator_2.assert_called_with(5, 3)
+        self.assertEqual(foo.a, 4)
+
+    def test_passing_bad_validators_on_construction(self):
+        """Test adding a validator in the constructor which takes a wrong number of arguments."""
+
+        # Create a validator function - here a mock - and add it.
+        validator = magic_mock_with_single_argument()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            class Foo:
+                a = traits.HasValidatorDelta([validator])
+
+        # Too many arguments should also fail.
+        validator = magic_mock_with_three_arguments()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            class Foo:
+                a = traits.HasValidatorDelta([validator])
+
+        # No arguments should also fail.
+        validator = magic_mock_with_no_arguments()
+        with self.assertRaisesRegex(Exception, 'take two'):
+            class Foo:
+                a = traits.HasValidatorDelta([validator])
 
 
 class TestResolve_mro(unittest.TestCase):
