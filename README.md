@@ -2,7 +2,21 @@
 
 # traitlite
 
-Traitlite is a light-weight (MIT-licensed) package which provides certain [descriptors](https://docs.python.org/3/howto/descriptor.html) to help control the attributes in a class, such as making them read-only<sup>\*</sup> or providing type-checking whenever the value is set. The documentation has examples for every trait, so check it out!
+Traitlite is a light-weight (MIT-licensed) package which provides certain [descriptors](https://docs.python.org/3/howto/descriptor.html) to help control the attributes in a class, such as making them read-only<sup>\*</sup> or providing type-checking whenever the value is set. 
+
+Here's a quick example that shows what it does, but the documentation has examples for every trait, so check it out!
+```python
+from traitlite import ReadOnly, TypeChecked
+class Foo:
+    bar = TypeChecked(int) + ReadOnly()
+
+    def __init__(self, bar):
+        self.bar = bar
+
+Foo(3.0) # Raises exception
+foo = Foo(3) # Okay
+foo.b = 2 # Raises exception because of read-only
+```
 
 <sup>\*</sup> well, as read-only as you can get in python
 
