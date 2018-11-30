@@ -13,7 +13,7 @@ class BreakOnRead(BaseTrait):
     """
     A trait which starts the debugger when it is accessed. The method called to
     start the debugger is the one set in the PYTHONBREAKPOINT environment
-    variable, or `pdb.set_trace` if the variable is not defined.
+    variable, or ``pdb.set_trace`` if the variable is not defined.
     ::
 
         from traitlite import BreakOnRead
@@ -36,7 +36,7 @@ class BreakOnWrite(BaseTrait):
     """
     A trait which starts the debugger when it is accessed. The method called to
     start the debugger is the one set in the PYTHONBREAKPOINT environment
-    variable, or `pdb.set_trace` if the variable is not defined.
+    variable, or ``pdb.set_trace`` if the variable is not defined.
     ::
 
         from traitlite import BreakOnWrite
@@ -69,7 +69,8 @@ class BreakOnWrite(BaseTrait):
 class BreakOnChange(HasCallback):
     """
     A trait which starts the debugger when its value causes the specified callback
-    to return True.
+    to return True. The method called to start the debugger is the one set in the
+    PYTHONBREAKPOINT environment variable, or ``pdb.set_trace`` if the variable is not defined.
     ::
 
         from traitlite import BreakOnChange
@@ -98,7 +99,8 @@ class BreakOnChange(HasCallback):
 class BreakOnChangeDelta(HasCallbackDelta):
     """
     A trait which starts the debugger when its old and new values cause the specified
-    callback to return True.
+    callback to return True. The method called to start the debugger is the one set in the
+    PYTHONBREAKPOINT environment variable, or ``pdb.set_trace`` if the variable is not defined.
     ::
 
         from traitlite import BreakOnChangeDelta
