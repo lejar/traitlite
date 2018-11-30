@@ -100,7 +100,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='traitlite',
-    version='0.0.2',
+    version='0.0.3',
     author='Christopher Pezley',
     author_email='pypi@pezley.net',
     description='A light-weight module that aims to provide control '
