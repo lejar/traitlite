@@ -2,7 +2,7 @@ import collections
 import unittest
 
 import hypothesis
-from hypothesis.strategies import data, integers, lists
+from hypothesis.strategies import integers, lists
 
 from traitlite import weakref_utilities
 
