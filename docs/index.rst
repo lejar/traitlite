@@ -60,3 +60,9 @@ Traits Documentation
 
 .. automodule:: traitlite
     :members:
+
+
+Debug Traits
+====================
+.. automodule:: traitlite.debug
+    :members:
